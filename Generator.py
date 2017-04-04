@@ -5,12 +5,16 @@ import os
 import mutagen
 import shutil
 import SpotifyGenerator
+import logging
 
 # Goal - can't get album from setlist, but can keep it from local, will make results better from gpm and spotify
 
 
 class Generator():
     def __init__(self, items, options):
+        logging.basicConfig(filename='log.txt', level=logging.INFO)
+        logging.info('Generator starting')
+        logging.getLogger('requests').setLevel(logging.WARNING)
         self.items = items
         self.options = options
         self.config = configparser.ConfigParser(interpolation=None)
@@ -36,7 +40,7 @@ class Generator():
             if self.status == 'Failed':
                 return self.status, self.message
         self.itemsAreBands = False if self.items[0].startswith('http://') else True
-# if all songs and not local, crash. happy to do spotify and gpm + local, otherwise dont have any track titles?
+
         if self.options['playlist_type'] == 2:
             if self.options['spotify']:
                 self.spotifyGenerator.add_all(self.items)
@@ -60,9 +64,7 @@ class Generator():
                 self.findFiles()
                 self.writeM3U()
 
-        with open('log.txt', 'w+') as logfile:
-            for line in self.logContents:
-                logfile.write(line + '\n')
+        logging.info('Finished generating')
         self.status = "Finished"
         return self.status, self.message
 
@@ -142,7 +144,7 @@ class Generator():
             try:
                 os.chdir(artist)
             except OSError:
-                self.logContents.append('No music by ' + artist + '\n')
+                logging.info('No music by ' + artist)
                 continue
             found = False
             for root, dirs, files in os.walk('.'):
@@ -157,7 +159,7 @@ class Generator():
                             found = True
                             break
             if not song_dict['Location']:
-                self.logContents.append('Could not find ' + title + ' by ' + artist + ' locally')
+                logging.info('Could not find ' + title + ' by ' + artist + ' locally')
             os.chdir(music_dir)
 
     def addAll(self, artist):
@@ -176,9 +178,9 @@ class Generator():
                                 song['Location'] = os.path.abspath(os.path.join(root, f))
                                 self.songsToAdd.append(song)
                     except KeyError:
-                        self.logContents.append(os.path.join(root, f) + ' tags are not present')
+                        logging.info(os.path.join(root, f) + ' tags are not present/readable')
             except OSError:
-                self.logContents.append('No music by ' + artist + '\n')
+                logging.info('No music by ' + artist)
             os.chdir(music_dir)
 
     def writeM3U(self):

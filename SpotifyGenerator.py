@@ -2,6 +2,7 @@ import spotipy
 import spotipy.util as util
 from more_itertools import unique_everseen
 import re
+import logging
 
 
 class SpotifyGenerator():
@@ -13,11 +14,10 @@ class SpotifyGenerator():
 
     def create_spotipy_instance(self):
         scope = 'playlist-read-private playlist-modify-public playlist-modify-private'
-        # TODO modifiy this function with a tkinter pop up window. want this to all be runnable with no console.
         self.token = util.prompt_for_user_token(self.username, scope, '892896528c1c4849bab75b493377d83e',
                                                 '287db3f1e9c64d6aa8de0724a3b09573', 'https://example.com/callback/')
         if not self.token:
-            return('Failed', 'Login failed :(')
+            return('Failed', 'Login failed, run configurer.exe :(')
         self.spotify_instance = spotipy.Spotify(auth=self.token)
         self.get_create_playlist(self.options['playlist_name'])
         return('Working', '')
@@ -35,7 +35,7 @@ class SpotifyGenerator():
             try:
                 artist_id = self.spotify_instance.search(q='artist:' + band, type='artist')['artists']['items'][0]['id']
             except:
-                print('Cannot find ' + band + ' on spotify')
+                logging.info('Cannot find ' + band + ' on spotify')
             try:
 
                 results = self.spotify_instance.artist_albums(artist_id, album_type='album', country='US')
@@ -65,7 +65,7 @@ class SpotifyGenerator():
                     unique_album_names.append(album_name)
 
             except:
-                print('Error finding albums for ' + band)
+                logging.info('Error finding albums for ' + band)
             tracks_to_add = []
             for album in unique_albums:
                 album_id = album['id']
