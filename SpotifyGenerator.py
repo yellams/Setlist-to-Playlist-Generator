@@ -1,7 +1,7 @@
 import spotipy
 import spotipy.util as util
+import operator
 from more_itertools import unique_everseen
-import re
 
 
 class SpotifyGenerator():
@@ -43,58 +43,49 @@ class SpotifyGenerator():
                 while results['next']:
                     results = self.spotify_instance.next(results)
                     albums.extend(results['items'])
-
                 unique_albums = []
-                unique_album_names = []
+                # Preference for deluxe...?
+                # track ids might be the same anyway?
+                # look at eminem relapse versions.
                 for album in albums:
-                    album_name = album['name']
-                    if 'edited' in album_name.lower():
-                        continue
-                    if album_name not in unique_album_names:
-                        if 'deluxe' not in album_name.lower():
-                            skip = False
-                            for alb in albums:
-                                if re.search(album_name + '.*(Deluxe|Explicit)', alb['name']):
-                                    skip = True
-                                    break
-                            if skip:
-                                continue
-                    else:
-                        continue
-                    unique_albums.append(album)
-                    unique_album_names.append(album_name)
+                    if not album['name'] in map(operator.itemgetter('name'), unique_albums):
+                        unique_albums.append(album)
 
             except:
                 print('Error finding albums for ' + band)
-            tracks_to_add = []
             for album in unique_albums:
-                album_id = album['id']
-                tracks = self.spotify_instance.album_tracks(album_id)['items']
-                for track in tracks:
-                    tracks_to_add.append(track['id'])
+                get_all_songs
 
-            self.add_track_ids(tracks_to_add)
+        pass
+        # For each band in list of bands get all albums and add songs to playlist called options['playlist_name']
 
     def add_set(self, songs_to_add):
         track_ids = []
         for song_dict in songs_to_add:
             search_query = 'track:' + song_dict['Title']
+            print(song_dict['Title'])
 
             search_query += ' AND artist:' + song_dict['Artist']
             if song_dict['Album']:
                 search_query += ' AND album:' + song_dict['Album']
-            trackID = None
+                # TODO musicbrainz lookup?
             try:
-                results = self.spotify_instance.search(q=search_query, type='track', limit=5)['tracks']['items']
-                for result in results:
-                    title = song_dict['Title'].replace(',', '').split('(')[0]
-                    if re.match(title, result['name'], re.IGNORECASE) or re.match(song_dict['Title'], result['name'], re.IGNORECASE):
-                        trackID = result['id']
-                        track_ids.append(trackID)
-                        break
+                # TODO if return more than 1 => multiple albums with song. musicbrainz api get first release - use as album param
+                trackID = self.spotify_instance.search(q=search_query, type='track', limit=1)['tracks']['items'][0]['id']
             except:
                 print('Error on ' + song_dict['Title'] + ' by ' + song_dict['Artist'])
-        self.add_track_ids(track_ids)
+            if trackID:
+                track_ids.append(trackID)
+        # get track ids already in playlist
+        existing_tracks = self.get_playlist_track_ids()
+        # Just in case, check against itself for duplicates
+        tracks_to_add = list(unique_everseen(track_ids))
+
+        # remove any tracks from track_ids if they exist in existing_tracks (i.e. adding to a playlist)
+        tracks_to_add = [track for track in tracks_to_add if track not in existing_tracks]
+        # split track ids into groups of 50
+        for track_ids_split in [tracks_to_add[i:i+50] for i in range(0, len(tracks_to_add), 50)]:
+            self.spotify_instance.user_playlist_add_tracks(self.username, self.playlist['id'], track_ids_split)
 
     def get_playlist_track_ids(self):
         results = self.spotify_instance.user_playlist_tracks(self.username, self.playlist['id'])
@@ -104,14 +95,3 @@ class SpotifyGenerator():
             tracks.extend(results['items'])
         track_ids = [track['track']['id'] for track in tracks]
         return track_ids
-
-    def add_track_ids(self, tracks):
-        '''
-        Add all trackIDs in tracks into a playlist, ensuring no duplicates with tracks already in the playlist.
-        '''
-        existing_tracks = self.get_playlist_track_ids()
-        tracks_to_add = list(unique_everseen(tracks))
-        tracks_to_add = [track for track in tracks_to_add if track not in existing_tracks]
-        # split track ids into groups of 50
-        for tracks_split in [tracks_to_add[i:i+50] for i in range(0, len(tracks_to_add), 50)]:
-            self.spotify_instance.user_playlist_add_tracks(self.username, self.playlist['id'], tracks_split)
