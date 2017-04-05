@@ -5,9 +5,8 @@ import os
 import mutagen
 import shutil
 import SpotifyGenerator
+import GoogleMusicGenerator
 import logging
-
-# Goal - can't get album from setlist, but can keep it from local, will make results better from gpm and spotify
 
 
 class Generator():
@@ -25,6 +24,7 @@ class Generator():
         self.status = 'Working'
         self.message = ''
         self.spotifyGenerator = None
+        self.googleGenerator = None
 
         # error returns when no items/options/config.
 
@@ -39,14 +39,18 @@ class Generator():
             self.status, self.message = self.spotifyGenerator.create_spotipy_instance()
             if self.status == 'Failed':
                 return self.status, self.message
+        if self.options['google_music']:
+            google_username = self.config['Google Music']['Username']
+            google_password = self.config['Google Music']['Password']
+            self.googleGenerator = GoogleMusicGenerator.GoogleMusicGenerator(self.options, google_username, google_password)
+
         self.itemsAreBands = False if self.items[0].startswith('http://') else True
 
         if self.options['playlist_type'] == 2:
             if self.options['spotify']:
                 self.spotifyGenerator.add_all(self.items)
             if self.options['google_music']:
-                pass
-                # self.googleGenerator.add_all(self.items)
+                self.googleGenerator.add_all(self.items)
             if self.options['local']:
                 for item in self.items:
                     self.generateAllSongs(item)
@@ -58,8 +62,7 @@ class Generator():
             if self.options['spotify']:
                 self.spotifyGenerator.add_set(self.songsToAdd)
             if self.options['google_music']:
-                pass
-                # self.googleGenerator.add_set(self.songsToAdd)
+                self.googleGenerator.add_set(self.songsToAdd)
             if self.options['local']:
                 self.findFiles()
                 self.writeM3U()

@@ -5,10 +5,6 @@ from tkinter import filedialog
 import configparser
 import Generator
 
-# TODO scrollbar
-# TODO checkbox next to each item in list for all music or something, maybe musicbrainz get album art and checkbox them all
-# TODO cleanup option - remove any dupes from m3u file.
-
 
 class UserInterface(ttk.Frame):
 

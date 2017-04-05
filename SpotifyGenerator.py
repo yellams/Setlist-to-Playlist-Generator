@@ -93,7 +93,7 @@ class SpotifyGenerator():
                         track_ids.append(trackID)
                         break
             except:
-                print('Error on ' + song_dict['Title'] + ' by ' + song_dict['Artist'])
+                logging.info('Error on ' + song_dict['Title'] + ' by ' + song_dict['Artist'])
         self.add_track_ids(track_ids)
 
     def get_playlist_track_ids(self):
