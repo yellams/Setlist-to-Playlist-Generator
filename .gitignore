@@ -1,1 +1,6 @@
 config.txt
+*.pyc
+main.exe
+config.txt
+.cache-yeiiams
+*.txt
