@@ -20,6 +20,7 @@ class Generator():
         self.config.read('config.txt')
         self.songsToAdd = []
         self.runningDir = os.getcwd()
+        self.playlistDir = self.config['Local']['playlist directory']
         self.logContents = []
         self.status = 'Working'
         self.message = ''
@@ -43,6 +44,9 @@ class Generator():
             google_username = self.config['Google Music']['Username']
             google_password = self.config['Google Music']['Password']
             self.googleGenerator = GoogleMusicGenerator.GoogleMusicGenerator(self.options, google_username, google_password)
+            self.status, self.message = self.googleGenerator.get_status()
+            if self.status == 'Failed':
+                return self.status, self.message
 
         self.itemsAreBands = False if self.items[0].startswith('http://') else True
 
@@ -68,7 +72,7 @@ class Generator():
                 self.writeM3U()
 
         logging.info('Finished generating')
-        self.status = "Finished"
+        self.status = 'Finished'
         return self.status, self.message
 
     def errorHandling(self):
@@ -76,7 +80,7 @@ class Generator():
             return 'Failed', 'No entries in the list'
         if not self.options['local'] and not self.options['google_music'] and not self.options['spotify']:
             return 'Failed', 'No playlist type selected'
-        if self.options['local'] and not self.config['Local Playlists']['Music Directory']:
+        if self.options['local'] and not self.config['Local']['Music Directory']:
             return 'Failed', 'No local music directory'
         return 'Working', ''
 
@@ -138,7 +142,7 @@ class Generator():
             return True
 
     def findFiles(self):
-        music_dir = self.config['Local Playlists']['Music Directory']
+        music_dir = self.config['Local']['Music Directory']
         os.chdir(music_dir)
 
         for song_dict in self.songsToAdd:
@@ -167,7 +171,7 @@ class Generator():
 
     def addAll(self, artist):
         if self.itemsAreBands:
-            music_dir = self.config['Local Playlists']['Music Directory']
+            music_dir = self.config['Local']['Music Directory']
             try:
                 os.chdir(music_dir + '/' + artist)
                 for root, dirs, files in os.walk('.'):
@@ -187,12 +191,13 @@ class Generator():
             os.chdir(music_dir)
 
     def writeM3U(self):
+        os.chdir(self.playlistDir)
         songs_in_list = []
         if os.path.isfile(self.options['playlist_name'] + '.m3u'):
             with open(self.options['playlist_name'] + '.m3u', 'r') as read_file:
                 for line in read_file:
                     songs_in_list.append(line.strip())
-        os.chdir(self.runningDir)
+
         with open(self.options['playlist_name'] + '.m3u', 'a+') as local_file:
             for song in self.songsToAdd:
                 if song['Location'] and song['Location'] not in songs_in_list:

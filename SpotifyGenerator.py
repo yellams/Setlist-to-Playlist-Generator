@@ -48,7 +48,7 @@ class SpotifyGenerator():
                 unique_album_names = []
                 for album in albums:
                     album_name = album['name']
-                    if 'edited' in album_name.lower():
+                    if 'edited' in album_name.lower() or 'commentary' in album_name.lower():
                         continue
                     if album_name not in unique_album_names:
                         if 'deluxe' not in album_name.lower():
@@ -83,15 +83,21 @@ class SpotifyGenerator():
             search_query += ' AND artist:' + song_dict['Artist']
             if song_dict['Album']:
                 search_query += ' AND album:' + song_dict['Album']
-            trackID = None
+            trackID = trackEPID = None
             try:
                 results = self.spotify_instance.search(q=search_query, type='track', limit=5)['tracks']['items']
                 for result in results:
                     title = song_dict['Title'].replace(',', '').split('(')[0]
                     if re.match(title, result['name'], re.IGNORECASE) or re.match(song_dict['Title'], result['name'], re.IGNORECASE):
-                        trackID = result['id']
-                        track_ids.append(trackID)
-                        break
+                        if 'EP' in result['album']['name']:
+                            trackEPID = result['id']
+                        else:
+                            trackID = result['id']
+                            break
+                if trackID:
+                    track_ids.append(trackID)
+                elif trackEPID:
+                    track_ids.append(trackEPID)
             except:
                 logging.info('Error on ' + song_dict['Title'] + ' by ' + song_dict['Artist'])
         self.add_track_ids(track_ids)

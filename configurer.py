@@ -21,6 +21,7 @@ if os.path.isfile('config.txt'):
 resp = input('Do you want to make m3u playlists from a local music directory? [Y/N]: ')
 if re.match('[Yy]', resp):
     music_dir = input('Type the directory of your local music directory: ')
+    playlist_dir = input('Type the directory to store your playlist m3u files: ')
 
 resp = input('Do you want to make spotify playlists? [Y/N]: ')
 if re.match('[Yy]', resp):
@@ -37,7 +38,7 @@ if re.match('[Yy]', resp):
           'so the app-specific password is stored in the config file')
     gpm_pw = input('Type your google app-specific password: ')
 
-config['Local'] = {'Music Directory': music_dir}
+config['Local'] = {'Music Directory': music_dir, 'Playlist Directory': playlist_dir}
 config['Spotify'] = {'Username': spotify_user}
 config['Google Music'] = {'Username': gpm_user, 'Password': gpm_pw}
 

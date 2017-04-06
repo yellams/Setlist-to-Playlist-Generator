@@ -4,6 +4,7 @@ from tkinter import ttk
 from tkinter import filedialog
 import configparser
 import Generator
+import os
 
 
 class UserInterface(ttk.Frame):
@@ -79,7 +80,7 @@ class UserInterface(ttk.Frame):
 
     def checkLocal(self):
         self.updateButton()
-        if not self.config.get('Local Playlists', 'Music Directory', fallback=None):
+        if not self.config.get('Local', 'Music Directory', fallback=None):
             tkinter.messagebox.showerror('Error', 'Please check config settings. Exiting.')
             self.openConfig()
             self.on_quit()
@@ -90,6 +91,9 @@ class UserInterface(ttk.Frame):
     def updateButton(self):
         self.message.set('')
         self.status.set('Generate!')
+
+    def workingButton(self):
+        self.status.set('Working...')
 
     def addEntry(self, pointless_var=None):
         self.listOfItems.insert(tkinter.END, self.entry.get())
@@ -121,6 +125,7 @@ class UserInterface(ttk.Frame):
         subprocess.Popen('start log.txt', shell=True)
 
     def generate(self):
+        cur_dir = os.getcwd()
         list_of_items = self.listOfItems.get(0, tkinter.END)
         list_of_items = [item.strip() for item in list_of_items]
         options = {}
@@ -133,14 +138,21 @@ class UserInterface(ttk.Frame):
         options['gui_interface'] = self.root
         generator = Generator.Generator(list_of_items, options)
         self.status.set('Working...')
+        self.root.update()
         status, message = generator.run()
         self.status.set(status)
         self.message.set(message)
+        self.root.update()
+
         if status == 'Finished':
-            self.message.set('Enter new playlist info and press Finished to run again!')
+            self.message.set('Finished! Press generate to go again!')
             ttk.Button(self, text='Open Log', command=self.openLog).grid(column=1, row=9)
             if self.local.get():
                 ttk.Button(self, text='Copy Files', command=lambda: self.copy(generator)).grid(column=2, row=9)
+            self.status.set('Generate!')
+            self.root.update()
+
+        os.chdir(cur_dir)
 
     def copy(self, generator):
         self.dir = filedialog.askdirectory(title='Choose dir')
